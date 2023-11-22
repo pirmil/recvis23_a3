@@ -1,3 +1,4 @@
+from __future__ import annotations
 import argparse
 import os
 
@@ -7,6 +8,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets
 from tqdm import tqdm
+from matplotlib import pyplot as plt
 
 from model_factory import ModelFactory
 
@@ -45,7 +47,7 @@ def opts() -> argparse.ArgumentParser:
     parser.add_argument(
         "--lr",
         type=float,
-        default=0.1,
+        default=0.01,
         metavar="LR",
         help="learning rate (default: 0.01)",
     )
@@ -84,6 +86,30 @@ def opts() -> argparse.ArgumentParser:
     return args
 
 
+def plot_losses(train_losses: list[float], val_losses: list[float], args: argparse.ArgumentParser) -> None:
+    plt.figure(figsize=(10, 5))
+    epochs = range(1, len(train_losses) + 1)
+    plt.plot(epochs, train_losses, label='Training Loss')
+    plt.plot(epochs, val_losses, label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Losses')
+    plt.legend()
+    plt.savefig(os.path.join(args.experiment, 'loss_plot.png'))
+    plt.show()
+
+def plot_accuracies(train_accuracies: list[float], val_accuracies: list[float], args: argparse.ArgumentParser) -> None:
+    plt.figure(figsize=(10, 5))
+    epochs = range(1, len(train_accuracies) + 1)
+    plt.plot(epochs, train_accuracies, label='Training Accuracy')
+    plt.plot(epochs, val_accuracies, label='Validation Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('Training and Validation Accuracies')
+    plt.legend()
+    plt.savefig(os.path.join(args.experiment, 'accuracy_plot.png'))
+    plt.show()
+
 def train(
     model: nn.Module,
     optimizer: torch.optim.Optimizer,
@@ -91,7 +117,7 @@ def train(
     use_cuda: bool,
     epoch: int,
     args: argparse.ArgumentParser,
-) -> None:
+) -> tuple[float, float]:
     """Default Training Loop.
 
     Args:
@@ -101,8 +127,13 @@ def train(
         use_cuda (bool): Whether to use cuda or not
         epoch (int): Current epoch
         args (argparse.ArgumentParser): Arguments parsed from command line
+    
+    Returns:
+        Training loss (float): training loss
+        Training accuracy (float): training accuracy
     """
     model.train()
+    training_loss = 0
     correct = 0
     for batch_idx, (data, target) in enumerate(train_loader):
         if use_cuda:
@@ -111,6 +142,7 @@ def train(
         output = model(data)
         criterion = torch.nn.CrossEntropyLoss(reduction="mean")
         loss = criterion(output, target)
+        training_loss += loss.data.item()
         loss.backward()
         optimizer.step()
         pred = output.data.max(1, keepdim=True)[1]
@@ -132,13 +164,15 @@ def train(
             100.0 * correct / len(train_loader.dataset),
         )
     )
+    training_loss /= len(train_loader.dataset)
+    return training_loss, 100.0 * correct / len(train_loader.dataset)
 
 
 def validation(
     model: nn.Module,
     val_loader: torch.utils.data.DataLoader,
     use_cuda: bool,
-) -> float:
+) -> tuple[float, float]:
     """Default Validation Loop.
 
     Args:
@@ -147,7 +181,8 @@ def validation(
         use_cuda (bool): Whether to use cuda or not
 
     Returns:
-        float: Validation loss
+        Validation loss (float): validation loss
+        Validation accuracy (float): validation accuracy
     """
     model.eval()
     validation_loss = 0
@@ -172,7 +207,7 @@ def validation(
             100.0 * correct / len(val_loader.dataset),
         )
     )
-    return validation_loss
+    return validation_loss, 100.0 * correct / len(val_loader.dataset)
 
 
 def main():
@@ -191,7 +226,7 @@ def main():
         os.makedirs(args.experiment)
 
     # load model and transform
-    model, data_transforms = ModelFactory(args.model_name).get_all()
+    model, data_transforms, data_transforms_train = ModelFactory(args.model_name).get_all()
     if use_cuda:
         print("Using GPU")
         model.cuda()
@@ -199,8 +234,14 @@ def main():
         print("Using CPU")
 
     # Data initialization and loading
+    original_train_dataset = datasets.ImageFolder(args.data + "/train_images", transform=data_transforms)
+    if data_transforms_train:
+        flipped_train_dataset = datasets.ImageFolder(args.data + "/train_images", transform=data_transforms_train)
+        train_dataset = torch.utils.data.ConcatDataset([original_train_dataset, flipped_train_dataset])
+    else:
+        train_dataset = original_train_dataset
     train_loader = torch.utils.data.DataLoader(
-        datasets.ImageFolder(args.data + "/train_images", transform=data_transforms),
+        train_dataset,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
@@ -213,15 +254,26 @@ def main():
     )
 
     # Setup optimizer
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    if args.model_name=="basic_cnn":
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    elif args.model_name=="finetuned_VGG":
+        optimizer = optim.SGD(model.classifier.parameters(), lr=args.lr, momentum=args.momentum)
+
+    # Lists to store training and validation losses, and accuracies
+    train_losses, val_losses = [], []
+    train_accuracies, val_accuracies = [], []
 
     # Loop over the epochs
     best_val_loss = 1e8
     for epoch in range(1, args.epochs + 1):
         # training loop
-        train(model, optimizer, train_loader, use_cuda, epoch, args)
+        train_loss, train_acc = train(model, optimizer, train_loader, use_cuda, epoch, args)
+        train_losses.append(train_loss)
+        train_accuracies.append(train_acc)
         # validation loop
-        val_loss = validation(model, val_loader, use_cuda)
+        val_loss, val_acc = validation(model, val_loader, use_cuda)
+        val_losses.append(val_loss)
+        val_accuracies.append(val_acc)
         if val_loss < best_val_loss:
             # save the best model for validation
             best_val_loss = val_loss
@@ -237,6 +289,12 @@ def main():
             + best_model_file
             + "` to generate the Kaggle formatted csv file\n"
         )
+
+    # Plot the training and validation losses
+    plot_losses(train_losses, val_losses, args)
+
+    # Plot the training and validation accuracies
+    plot_accuracies(train_accuracies, val_accuracies, args)
 
 
 if __name__ == "__main__":
