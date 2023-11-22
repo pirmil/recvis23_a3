@@ -11,3 +11,22 @@ data_transforms = transforms.Compose([
         std=[0.229, 0.224, 0.225]
     )
 ])
+
+data_transforms_VGG = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+])
+
+data_transforms_VGG_train_flip = transforms.Compose([
+    transforms.RandomHorizontalFlip(p=1), # flip the image with proba = 1
+    transforms.Resize((128, 128)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+])
