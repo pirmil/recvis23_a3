@@ -60,7 +60,7 @@ def main() -> None:
 
     # load model and transform
     state_dict = torch.load(args.model)
-    model, data_transforms = ModelFactory(args.model_name).get_all()
+    model, _, data_transforms_valid = ModelFactory(args.model_name, "whole_model", "no_path", "no_name").get_all()
     model.load_state_dict(state_dict)
     model.eval()
     if use_cuda:
@@ -70,10 +70,10 @@ def main() -> None:
         print("Using CPU")
 
     output_file = open(args.outfile, "w")
-    output_file.write("Id,Category\n")
+    output_file.write("Id,Label\n")
     for f in tqdm(os.listdir(test_dir)):
         if "png" in f:
-            data = data_transforms(pil_loader(test_dir + "/" + f))
+            data = data_transforms_valid(pil_loader(test_dir + "/" + f))
             data = data.view(1, data.size(0), data.size(1), data.size(2))
             if use_cuda:
                 data = data.cuda()
