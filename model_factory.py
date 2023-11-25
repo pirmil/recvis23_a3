@@ -1,44 +1,54 @@
-"""Python file to instantite the model and the transform that goes with it."""
-from model import Net, FineTunedVGGClassifier
-from data import data_transforms, data_transforms_VGG, data_transforms_VGG_train_flip
+from __future__ import annotations
+import torch.nn as nn
+from torchvision import transforms
+from model import SmallVGGClassifier, FineTunedVGGClassifier, FineTunedAlexNetClassifier, IncrementalTrainedModel, FineTunedResNetClassifier, Net
+from data import data_transforms_train, data_transforms_valid
 
+acceptable_models = {"small_VGG", "finetuned_VGG", "finetuned_AlexNet", "finetuned_ResNet", "incremental_model", "basic_cnn"}
 
 class ModelFactory:
-    def __init__(self, model_name: str):
+    """
+    Class to instantiate the model and the transforms that go with it.
+    """
+    def __init__(self, model_name: str, layers_to_finetune: str, model_path: str, class_name: str) -> None:
         self.model_name = model_name
-        self.model = self.init_model()
-        self.transform = self.init_transform()
-        self.transform_train = self.init_transform_train()
+        self.model = self.init_model(layers_to_finetune, model_path, class_name)
+        self.transforms_train = self.init_transforms_train()
+        self.transforms_valid = self.init_transforms_valid()
 
-    def init_model(self):
-        if self.model_name == "basic_cnn":
-            return Net()
+    def init_model(self, layers_to_finetune: str, model_path: str, class_name: str) -> nn.Module:
+        if self.model_name == "small_VGG":
+            return SmallVGGClassifier()
         elif self.model_name == "finetuned_VGG":
-            return FineTunedVGGClassifier()
+            return FineTunedVGGClassifier(layers_to_finetune)
+        elif self.model_name == 'finetuned_AlexNet':
+            return FineTunedAlexNetClassifier(layers_to_finetune)
+        elif self.model_name == 'finetuned_ResNet':
+            return FineTunedResNetClassifier(layers_to_finetune)
+        elif self.model_name == 'incremental_model':
+            return IncrementalTrainedModel(model_path, class_name, layers_to_finetune)
+        elif self.model_name == 'basic_cnn':
+            return Net()
         else:
             raise NotImplementedError("Model not implemented")
         
-    def init_transform_train(self):
-        if self.model_name == "basic_cnn":
-            return None
-        elif self.model_name == "finetuned_VGG":
-            return data_transforms_VGG_train_flip
+    def init_transforms_train(self) -> transforms.Compose:
+        if self.model_name in acceptable_models:
+            return data_transforms_train
         else:
             raise NotImplementedError("Transform not implemented")       
 
-    def init_transform(self):
-        if self.model_name == "basic_cnn":
-            return data_transforms
-        elif self.model_name == "finetuned_VGG":
-            return data_transforms_VGG
+    def init_transforms_valid(self) -> transforms.Compose:
+        if self.model_name in acceptable_models:
+            return data_transforms_valid
         else:
             raise NotImplementedError("Transform not implemented")
 
-    def get_model(self):
+    def get_model(self) -> nn.Module:
         return self.model
 
-    def get_transform(self):
-        return self.transform
+    def get_transforms(self) -> tuple[transforms.Compose, transforms.Compose]:
+        return self.transforms_train, self.transforms_valid
 
-    def get_all(self):
-        return self.model, self.transform, self.transform_train
+    def get_all(self) -> tuple[nn.Module, transforms.Compose, transforms.Compose]:
+        return self.model, self.transforms_train, self.transforms_valid
