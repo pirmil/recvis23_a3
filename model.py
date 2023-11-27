@@ -129,6 +129,16 @@ class FineTunedVGGClassifier(nn.Module):
         x = torch.flatten(x, 1)
         x = self.classifier(x)
         return x
+    
+class FineTunedDenseNetClassifier(nn.Module):
+    def __init__(self, layers_to_finetune: str) -> None:
+        super(FineTunedDenseNetClassifier, self).__init__()
+        # Load pre-trained Densenet121
+        self.densenet = models.densenet121(weights='DEFAULT')
+        freeze_parameters(self.densenet, layers_to_finetune)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.densenet(x)
 
 class VGGFeatures(nn.Module):
     def __init__(self) -> None:
