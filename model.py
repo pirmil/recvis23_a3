@@ -211,7 +211,7 @@ class Net(nn.Module):
 
 class MultiModel(nn.Module):
     def __init__(self, num_classes=nclasses):
-        super(Net,self).__init__()
+        super(MultiModel,self).__init__()
         
         self.res = models.resnet50(pretrained=True)
         self.inc = models.inception_v3(pretrained=True)
