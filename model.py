@@ -213,9 +213,9 @@ class MultiModel(nn.Module):
     def __init__(self, num_classes=nclasses):
         super(MultiModel,self).__init__()
         
-        self.res = models.resnet50(pretrained=True)
-        self.inc = models.inception_v3(pretrained=True)
-        self.vgg = models.vgg16_bn(pretrained=True)
+        self.res = models.resnet50(weights='DEFAULT')
+        self.inc = models.inception_v3(weights='DEFAULT')
+        self.vgg = models.vgg16_bn(weights='DEFAULT')
 
 
      
