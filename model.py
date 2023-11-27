@@ -207,6 +207,7 @@ class Net(nn.Module):
         x = x.view(-1, 320)
         x = F.relu(self.fc1(x))
         return self.fc2(x)
+    
 
 class MultiModel(nn.Module):
     def __init__(self, num_classes=nclasses):
