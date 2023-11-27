@@ -207,3 +207,59 @@ class Net(nn.Module):
         x = x.view(-1, 320)
         x = F.relu(self.fc1(x))
         return self.fc2(x)
+
+class MultiModel(nn.Module):
+    def __init__(self, num_classes=nclasses):
+        super(Net,self).__init__()
+        
+        self.res = models.resnet50(pretrained=True)
+        self.inc = models.inception_v3(pretrained=True)
+        self.vgg = models.vgg16_bn(pretrained=True)
+
+
+     
+        for param in self.inc.parameters():
+            param.requires_grad = False 
+        self.inc.aux_logits = False
+        num_features = self.inc.fc.in_features
+        self.inc.fc = nn.Linear(num_features,512)
+
+        for param in self.vgg.parameters():
+          param.requires_grad = False
+        number_features = self.vgg.classifier[6].in_features
+        features = list(self.vgg.classifier.children())[:-1]
+        features.extend([nn.Linear(number_features,512)])
+        self.vgg.classifier = nn.Sequential(*features)
+        
+
+        for param in self.res.conv1.parameters():
+            param.requires_grad = False
+        for param in self.res.bn1.parameters():
+            param.requires_grad = False
+        for param in self.res.layer1.parameters():
+            param.requires_grad = False
+        for param in self.res.layer2.parameters():
+            param.requires_grad = False
+        for param in self.res.layer3.parameters():
+            param.requires_grad = False     
+        
+        #self.res.avgpool = nn.AvgPool2d(10)
+        num_features2 = self.res.fc.in_features
+        self.res.fc = nn.Linear(num_features2, 512)
+
+        
+        self.fc1 = nn.Linear(512*3,100)
+        self.fc2 = nn.Linear(100,20)
+
+
+      
+    def forward(self, input):
+        x1 = self.res(input)
+        x2 = self.inc(input)
+        x3 = self.vgg(input)
+        x = torch.cat((x1,x2,x3),1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        return self.fc2(x)
+
+model_ft = nn.DataParallel(Net())
