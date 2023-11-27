@@ -137,6 +137,8 @@ class FineTunedDenseNetClassifier(nn.Module):
         self.densenet = models.densenet121(weights='DEFAULT')
         freeze_parameters(self.densenet, layers_to_finetune)
 
+        self.densenet.classifier = nn.Linear(self.densenet.classifier.in_features, nclasses)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.densenet(x)
 
@@ -220,29 +222,28 @@ class Net(nn.Module):
     
 
 class MultiModel(nn.Module):
-    def __init__(self, num_classes=nclasses):
+    def __init__(self, nclasses):
         super(MultiModel,self).__init__()
         
         self.resnet = models.resnet50(weights='DEFAULT')
         self.vgg = models.vgg16_bn(weights='DEFAULT')
-
-        n_input = self.vgg.classifier[-1].in_features
-        self.vgg.classifier[-1] = nn.Linear(in_features=n_input, out_features=256)
-
-        n_input = self.resnet.fc.in_features
-        self.resnet.fc = nn.Linear(in_features=n_input, out_features=256)
+        self.densenet = models.densenet121(weights='DEFAULT')
+        
+        self.vgg.classifier[-1] = nn.Linear(in_features=self.vgg.classifier[-1].in_features, out_features=256)
+        self.resnet.fc = nn.Linear(self.resnet.fc.in_features, 256)
+        self.densenet.classifier = nn.Linear(self.densenet.classifier.in_features, 256)
 
         for param in self.resnet.parameters():
             param.requires_grad = True
         for param in self.vgg.parameters():
             param.requires_grad = True
 
-        self.fc = nn.Linear(256 * 2, nclasses)
-
+        self.fc = nn.Linear(256 * 3, nclasses)
 
       
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         xres = self.resnet(x)
         xvgg = self.vgg(x)
-        x = torch.cat((xres,xvgg), 1)
+        xdense = self.densenet(x)
+        x = torch.cat((xres,xvgg, xdense), 1)
         return self.fc(x)
