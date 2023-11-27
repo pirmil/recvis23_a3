@@ -222,13 +222,13 @@ class Net(nn.Module):
     
 
 class MultiModel(nn.Module):
-    def __init__(self, nclasses):
+    def __init__(self):
         super(MultiModel,self).__init__()
         
         self.resnet = models.resnet50(weights='DEFAULT')
         self.vgg = models.vgg16_bn(weights='DEFAULT')
         self.densenet = models.densenet121(weights='DEFAULT')
-        
+
         self.vgg.classifier[-1] = nn.Linear(in_features=self.vgg.classifier[-1].in_features, out_features=256)
         self.resnet.fc = nn.Linear(self.resnet.fc.in_features, 256)
         self.densenet.classifier = nn.Linear(self.densenet.classifier.in_features, 256)
