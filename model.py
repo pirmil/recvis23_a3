@@ -261,5 +261,3 @@ class MultiModel(nn.Module):
         x = self.fc1(x)
         x = F.relu(x)
         return self.fc2(x)
-
-model_ft = nn.DataParallel(Net())
