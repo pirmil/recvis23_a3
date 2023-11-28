@@ -240,9 +240,15 @@ def train(
         if use_cuda:
             data, target = data.cuda(), target.cuda()
         optimizer.zero_grad()
-        output = model(data)
         criterion = nn.CrossEntropyLoss(reduction="mean")
-        loss = criterion(output, target)
+        if args.model_name=='finetuned_inception':
+            outputs, aux_outputs = model(data)
+            loss1 = criterion(outputs, target)
+            loss2 = criterion(aux_outputs, target)
+            loss = loss1 + 0.4*loss2
+        else:
+            output = model(data)
+            loss = criterion(output, target)
         training_loss += loss.data.item()
         loss.backward()
         optimizer.step()
