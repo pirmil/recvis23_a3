@@ -20,6 +20,20 @@ def freeze_parameters(model: nn.Module, layers_to_finetune: str) -> None:
     else:
         raise NotImplementedError(f"This fine-tuning method is not implemented.")
 
+class FineTunedInceptionClassifier(nn.Module):
+    def __init__(self, layers_to_finetune: str) -> None:
+        super(FineTunedInceptionClassifier, self).__init__()
+        self.inception = models.inception_v3(weights='DEFAULT')
+        freeze_parameters(self.inception, layers_to_finetune)
+        # Handle the auxilary net
+        num_ftrs = self.inception.AuxLogits.fc.in_features
+        self.inception.AuxLogits.fc = nn.Linear(in_features=num_ftrs, out_features=nclasses)
+        # Handle the primary net
+        self.inception.fc = nn.Linear(in_features=self.inception.fc.in_features, out_features=nclasses)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.inception(x)
+
 class IncrementalTrainedModel(nn.Module):
     def __init__(self, model_path: str, class_name: str, layers_to_finetune: str) -> None:
         """
