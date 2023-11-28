@@ -1,10 +1,10 @@
 from __future__ import annotations
 import torch.nn as nn
 from torchvision import transforms
-from model import SmallVGGClassifier, FineTunedVGGClassifier, FineTunedAlexNetClassifier, IncrementalTrainedModel, FineTunedResNetClassifier, Net, MultiModel
+from model import SmallVGGClassifier, FineTunedVGGClassifier, FineTunedAlexNetClassifier, IncrementalTrainedModel, FineTunedResNetClassifier, Net, MultiModel, FineTunedDenseNetClassifier
 from data import data_transforms_train, data_transforms_valid
 
-acceptable_models = {"small_VGG", "finetuned_VGG", "finetuned_AlexNet", "finetuned_ResNet", "incremental_model", "basic_cnn", "multi_model"}
+acceptable_models = {"small_VGG", "finetuned_VGG", "finetuned_AlexNet", "finetuned_ResNet", "incremental_model", "basic_cnn", "multi_model", "finetuned_DenseNet"}
 
 class ModelFactory:
     """
@@ -31,6 +31,8 @@ class ModelFactory:
             return Net()
         elif self.model_name == 'multi_model':
             return MultiModel()
+        elif self.model_name == 'finetuned_DenseNet':
+            return FineTunedDenseNetClassifier(layers_to_finetune)
         else:
             raise NotImplementedError("Model not implemented")
         
