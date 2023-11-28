@@ -15,7 +15,6 @@ data_transforms_valid = transforms.Compose([
 # Training data: data augmentation with RandomResizedCrop and RandomHorizontalFlip
 data_transforms_train = transforms.Compose([
     transforms.RandomResizedCrop((224, 224)),
-    transforms.RandomRotation(45),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
