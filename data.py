@@ -19,3 +19,20 @@ data_transforms_train = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
+
+
+## FOR INCEPTION ONLY
+# Validation and test data
+data_transforms_valid_inception = transforms.Compose([
+    transforms.Resize((299, 299)),
+    transforms.CenterCrop((299, 299)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+# Training data: data augmentation with RandomResizedCrop and RandomHorizontalFlip
+data_transforms_train_inception = transforms.Compose([
+    transforms.RandomResizedCrop((299, 299)),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
