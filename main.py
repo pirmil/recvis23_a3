@@ -242,9 +242,9 @@ def train(
         optimizer.zero_grad()
         criterion = nn.CrossEntropyLoss(reduction="mean")
         if args.model_name=='finetuned_inception':
-            outputs, aux_outputs = model(data)
-            loss1 = criterion(outputs, target)
-            loss2 = criterion(aux_outputs, target)
+            output, aux_output = model(data)
+            loss1 = criterion(output, target)
+            loss2 = criterion(aux_output, target)
             loss = loss1 + 0.4*loss2
         else:
             output = model(data)
