@@ -21,7 +21,7 @@ data_transforms_train = transforms.Compose([
 ])
 
 
-## FOR INCEPTION ONLY
+## FOR INCEPTION ONLY (inception expects 299x299 images)
 # Validation and test data
 data_transforms_valid_inception = transforms.Compose([
     transforms.Resize((299, 299)),
