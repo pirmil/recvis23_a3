@@ -5,9 +5,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.autograd import Variable
 from torchvision import datasets, transforms
-from tqdm import tqdm
 from torch.utils.data import DataLoader, ConcatDataset, Subset
 from matplotlib import pyplot as plt
 from model import IncrementalTrainedModel
@@ -242,6 +240,7 @@ def train(
         optimizer.zero_grad()
         criterion = nn.CrossEntropyLoss(reduction="mean")
         if args.model_name=='finetuned_inception':
+            # Only for inception, auxiliary output
             output, aux_output = model(data)
             loss1 = criterion(output, target)
             loss2 = criterion(aux_output, target)
