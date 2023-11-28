@@ -1,10 +1,10 @@
 from __future__ import annotations
 import torch.nn as nn
 from torchvision import transforms
-from model import SmallVGGClassifier, FineTunedVGGClassifier, FineTunedAlexNetClassifier, IncrementalTrainedModel, FineTunedResNetClassifier, Net, MultiModel, FineTunedDenseNetClassifier
-from data import data_transforms_train, data_transforms_valid
+from model import SmallVGGClassifier, FineTunedVGGClassifier, FineTunedAlexNetClassifier, IncrementalTrainedModel, FineTunedResNetClassifier, Net, MultiModel, FineTunedDenseNetClassifier, FineTunedInceptionClassifier
+from data import data_transforms_train, data_transforms_valid, data_transforms_train_inception, data_transforms_valid_inception
 
-acceptable_models = {"small_VGG", "finetuned_VGG", "finetuned_AlexNet", "finetuned_ResNet", "incremental_model", "basic_cnn", "multi_model", "finetuned_DenseNet"}
+acceptable_models = {"small_VGG", "finetuned_VGG", "finetuned_AlexNet", "finetuned_ResNet", "incremental_model", "basic_cnn", "multi_model", "finetuned_DenseNet", "finetuned_inception"}
 
 class ModelFactory:
     """
@@ -33,16 +33,22 @@ class ModelFactory:
             return MultiModel()
         elif self.model_name == 'finetuned_DenseNet':
             return FineTunedDenseNetClassifier(layers_to_finetune)
+        elif self.model_name == 'finetuned_inception':
+            return FineTunedInceptionClassifier(layers_to_finetune)
         else:
             raise NotImplementedError("Model not implemented")
         
     def init_transforms_train(self) -> transforms.Compose:
-        if self.model_name in acceptable_models:
+        if self.model_name=='finetuned_inception':
+            return data_transforms_train_inception
+        elif self.model_name in acceptable_models:
             return data_transforms_train
         else:
             raise NotImplementedError("Transform not implemented")       
 
     def init_transforms_valid(self) -> transforms.Compose:
+        if self.model_name=='finetuned_inception':
+            return data_transforms_valid_inception
         if self.model_name in acceptable_models:
             return data_transforms_valid
         else:
