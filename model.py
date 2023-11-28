@@ -53,6 +53,8 @@ class IncrementalTrainedModel(nn.Module):
             self.base_model = SmallVGGClassifier()
         elif class_name == 'basic_cnn':
             self.base_model = Net()
+        elif class_name== 'finetuned_DenseNet':
+            self.base_model = FineTunedDenseNetClassifier(layers_to_finetune)
         else:
             raise ValueError(f"Unsupported model class: {class_name}")
         checkpoint = torch.load(model_path)
